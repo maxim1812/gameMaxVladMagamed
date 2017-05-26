@@ -5,7 +5,7 @@ RUN apk add --update bash
 COPY ./nginx.conf /etc/nginx
 COPY ./listen.conf /etc/nginx/
 
-RUN mkdir /static
+RUN mkdir /xogame123
 COPY ./static/ResultScript/result.js /xogame123/result.js
 COPY ./static/index.html /xogame123/index.html
 COPY ./static/Images /xogame123/Images
