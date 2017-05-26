@@ -6,8 +6,8 @@ COPY ./nginx.conf /etc/nginx
 COPY ./listen.conf /etc/nginx/
 
 RUN mkdir /static
-COPY ./static/ResultScript/result.js /static/result.js
-COPY ./static/index.html /static/index.html
-COPY ./static/Images /static/Images
+COPY ./static/ResultScript/result.js /xogame123/result.js
+COPY ./static/index.html /xogame123/index.html
+COPY ./static/Images /xogame123/Images
 
 CMD /bin/bash -c "echo \"listen $PORT;\" > /etc/nginx/listen.conf && nginx -g 'daemon off;'"
