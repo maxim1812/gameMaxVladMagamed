@@ -5,14 +5,9 @@ node_js:
 - '7'
 services:
   - docker
+ 
 script:
   - npm run webpack
-branches:
-  only:
-  - master
-deploy:
-  - provider: script
-    script: "./deploy.sh XO"
-    skip_cleanup: true
-    on:
-      branch: master
+  - docker login --username=_ --password=$(echo $API_KEY) registry.heroku.com
+  - docker build -t registry.heroku.com/XOgame/web .
+  - docker push registry.heroku.com/XOgame/web
