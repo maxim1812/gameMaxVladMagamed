@@ -1,10 +1,14 @@
 dist: trusty
 sudo: required
+
 language: node_js
+
 node_js:
 - '7'
 services:
   - docker
+
+install: true
  
 script:
   - docker login --username=_ --password='00e66281-cd2d-4c59-b216-edc2bcbf6872' registry.heroku.com
