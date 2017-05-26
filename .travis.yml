@@ -7,7 +7,6 @@ services:
   - docker
  
 script:
-  - npm run webpack
-  - docker login --username=_ --password= '00e66281-cd2d-4c59-b216-edc2bcbf6872' registry.heroku.com
+  - docker login --username=_ --password= 00e66281-cd2d-4c59-b216-edc2bcbf6872 registry.heroku.com
   - docker build -t registry.heroku.com/XOgame/web .
   - docker push registry.heroku.com/XOgame/web
