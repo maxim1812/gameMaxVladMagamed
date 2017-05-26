@@ -7,8 +7,6 @@ services:
   - docker
  
 script:
-
-  - api-key: 00e66281-cd2d-4c59-b216-edc2bcbf6872
   - npm run webpack
   - docker login --username=_ --password=$(echo $API_KEY) registry.heroku.com
   - docker build -t registry.heroku.com/XOgame/web .
