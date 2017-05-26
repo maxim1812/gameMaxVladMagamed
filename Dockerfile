@@ -1,4 +1,3 @@
-echo "Start docker..."
 FROM nginx:1.13.0-alpine
 
 RUN apk add --update bash
