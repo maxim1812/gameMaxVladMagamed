@@ -1,0 +1,13 @@
+FROM nginx:1.13.0-alpine
+
+RUN apk add --update bash
+
+COPY ./nginx.conf /etc/nginx
+COPY ./listen.conf /etc/nginx/
+
+RUN mkdir /static
+COPY ./static/ResultScript/result.js /static/result.js
+COPY ./static/index.html /static/index.html
+COPY ./static/Images /static/Images
+
+CMD /bin/bash -c "echo \"listen $PORT;\" > /etc/nginx/listen.conf && nginx -g 'daemon off;'"
