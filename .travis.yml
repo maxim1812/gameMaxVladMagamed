@@ -12,5 +12,7 @@ install: true
 
 script:
   - docker login --username=_ --password=$(echo $API_KEY) registry.heroku.com
+  
+  - docker images --all
   - docker build -t registry.heroku.com/xogame123/web .
   - docker push registry.heroku.com/xogame123/web
