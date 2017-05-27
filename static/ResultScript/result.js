@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 15);
+/******/ 	return __webpack_require__(__webpack_require__.s = 16);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -83,10 +83,16 @@ class AuthorizationControl{
         this.stringController = stringController;
         this.message = messageElement;
         this.boxRender = boxRender;
+		
+		//this.parameterList = ["e-mail","пароль"];
+		//this.HTMLFieldsList = ["e-mail","password"];
     }
 
     // метод для проверки корректности логина и пароля
     controlLoginAndPasswordStringsInAuthorizationForm(){
+		for(let i = 0; i<2; i++){
+							//elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).removeClass('error');
+						}
         // получаем содержимое логина и пароля
         // получаем логин
         const loginString = this.elementFinder.getElement("authorization-box__login-field_black-shadow").value;
@@ -109,12 +115,12 @@ class AuthorizationControl{
         switch(loginResult){
             // если логин - пустая строка
             case "EMPTY":
-                this.message.addText("Поле ввода логина пусто.");
+                this.message.addText("Поле ввода e-mail пусто.");
                 stringsOK = false;
                 break;
             // если логин содержит некорректные символы
             case "NO_CORRECT":
-                this.message.addText("Поле ввода логина содержит запретные символы.");
+                this.message.addText("Поле ввода e-mail содержит запретные символы.");
                 stringsOK = false;
                 break;
         }
@@ -138,6 +144,7 @@ class AuthorizationControl{
 
     // метод для попытки авторизации пользователя
     authorize(url,router,isAuthorized){
+        let thisElem = this;
         // проверяем, корректны ли логин и пароль
         const flag = this.controlLoginAndPasswordStringsInAuthorizationForm();
         // если логин и пароль прошли проверку на корректность
@@ -165,6 +172,7 @@ class AuthorizationControl{
             const query = url + "auth/login";
             // создаём объект для отправки запроса
             let request = new XMLHttpRequest();
+            request.withCredentials = true;
             request.open("POST",query);
             request.setRequestHeader("Content-Type","application/json;charset=UTF-8");
             request.send(strJSON);
@@ -172,33 +180,95 @@ class AuthorizationControl{
             request.onreadystatechange = function(){
                 // если ответ нормальный
                 if(request.readyState === 4 ){
-                    switch(request.status){
-						case 200:
+                    message.clear();
+					let parameterList = ["e-mail","пароль"];
+					let HTMLFieldsList = ["e-mail","password"];
+
+				let JSONAnswer = JSON.parse(request.responseText);
+				let keyCode = String(JSONAnswer.key);
+
+				if (keyCode === "2" || keyCode === "1"){
+					// ошибка авторизации, неверный логин
+					message.setText("Пользователя с таким e-mail-ом <br>не существует или был введен <br>некорректный пароль!");
+				}
+				else{
+					if (keyCode !== "777"){
+						for(let i = 0; i<2; i++){
+							switch (keyCode.charAt(i)){
+								case '7':
+									break;
+								case '1':
+									message.addText(`Поле ${parameterList[i]} пусто!`);
+									//this.elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).addClass('error');
+									break;
+								case '3':
+									message.addText(`Поле ${parameterList[i]} содержит запретные символы!`);
+									//this.elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).addClass('error');
+									break;									
+							}
+						}
+					}
+					else{
+							//пользователь успешно создан
+							
 							// авторизация прошла успешно
-							// меняем содержимое полей объекта, отвечающего за авторизованность пользователя
-							isAuthorized.flag = true;
-							let userName = JSON.parse(request.responseText).userProfile.username;
-							isAuthorized.login = userName;
-							// выводим содержимое логина на странице профиля
-							elementFinder.getElement("my-profile-box__user-login_big-text").innerHTML = "Логин: " + isAuthorized.login;
-							// переходим на страницу профиля
-							router.setPathName("/profile");
-							break;
-						case 400:
-							// ошибка авторизации, неверный логин
-							message.setText("Пользователя с таким e-mail-ом не существует!");
-							break;
-						case 404:
-							// ошибка авторизации, неверный логин или пароль
-							message.setText("Вы ввели некорректные данные.");
-							break;
-						default:
-							break;
+                            // work with cookie
+                            //document.cookie = "USER=" + JSONAnswer.userProfile.username;
+                            //document.cookie = "MAIL=" + thisElem.elementFinder.getElement("authorization-box__login-field_black-shadow").value;
+                            //document.cookie = "PASSWORD=" +  thisElem.elementFinder.getElement("authorization-box__password-field_black-shadow").value;
+                        alert( document.cookie );
+
+                        // меняем содержимое полей объекта, отвечающего за авторизованность пользователя
+								isAuthorized.flag = true;
+								let userName = JSONAnswer.userProfile.username;
+								isAuthorized.login = userName;
+								// выводим содержимое логина на странице профиля
+								elementFinder.getElement("my-profile-box__user-login_big-text").innerHTML = "Логин: " + isAuthorized.login;
+								// переходим на страницу профиля
+								router.setPathName("/profile");
+
+								message.clear();
+						}			
 					}
 				}
 			}
 		}
 	}
+	
+	
+	// метод для попытки авторизации пользователя
+    sendHelloToServer(url,router,isAuthorized){
+       let elementFinder = this.elementFinder;
+	   let message = this.message;
+       const query = url + "user/getInfoUser";
+       // создаём объект для отправки запроса
+       let request = new XMLHttpRequest();
+       request.withCredentials = true;
+       request.open("GET",query);
+       request.setRequestHeader("Content-Type","application/json;charset=UTF-8");
+       request.send();
+       // при получении ответа с сервера
+       request.onreadystatechange = function() {
+           // если ответ нормальный
+           if (request.readyState === 4) {
+               let JSONAnswer = JSON.parse(request.responseText);
+               console.log(JSONAnswer);
+               let keyCode = String(JSONAnswer.key);
+			   if (keyCode ==="0"){
+				   console.log(JSONAnswer.userProfile.username);
+				   isAuthorized.flag = true;
+					let userName = JSONAnswer.userProfile.username;
+					isAuthorized.login = userName;
+					// выводим содержимое логина на странице профиля
+					elementFinder.getElement("my-profile-box__user-login_big-text").innerHTML = "Логин: " + isAuthorized.login;
+					// переходим на страницу профиля
+					router.setPathName("/profile");
+					message.clear();
+			   }
+           }
+       }
+
+    }
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = AuthorizationControl;
 
@@ -285,16 +355,18 @@ class CanvasManager{
         // @ - пустая клетка
         // X - клетка занята крестиком
         // 0 - клетка занята ноликом
+        let k = 2;
+
         this.map = [
-            {type: "@", x: 0, y: 0},
-            {type: "@", x: 80, y: 0},
-            {type: "@", x: 160, y: 0},
-            {type: "@", x: 0, y: 80},
-            {type: "@", x: 80, y: 80},
-            {type: "@", x: 160, y: 80},
-            {type: "@", x: 0, y: 160},
-            {type: "@", x: 80, y: 160},
-            {type: "@", x: 160, y: 160}
+            {type: "@", x: 0 * k, y: 0 * k},
+            {type: "@", x: 80 * k, y: 0 * k},
+            {type: "@", x: 160 * k, y: 0 * k},
+            {type: "@", x: 0 * k, y: 80 * k},
+            {type: "@", x: 80 * k, y: 80 * k},
+            {type: "@", x: 160 * k, y: 80 * k},
+            {type: "@", x: 0 * k, y: 160 * k},
+            {type: "@", x: 80 * k, y: 160 * k},
+            {type: "@", x: 160 * k, y: 160 * k}
         ];
         // задаём параметры рисования
         this.holst.lineWidth = 3;
@@ -345,8 +417,9 @@ class CanvasManager{
 
     // вывод всего клеточного поля на экран
     renderMap(){
+        let k = 2;
         // очищаем содержимое холста
-        this.holst.clearRect(0,0,240,240);
+        this.holst.clearRect(0,0,480,480);
         // пробегаемся по всем клеткам
         for(let i = 0; i < this.map.length; i++){
             // получаем тип клетки под номером i
@@ -355,20 +428,20 @@ class CanvasManager{
             switch(type){
                 // для пустой клетки
                 case "@":
-                    this.holst.drawImage(this.imgEmpty,this.map[i].x,this.map[i].y,80,80);
+                    this.holst.drawImage(this.imgEmpty,this.map[i].x,this.map[i].y,80 * k,80 * k);
                     break;
                 // для клетки хранящей нолик
                 case "0":
-                    this.holst.drawImage(this.imgCircle,this.map[i].x,this.map[i].y,80,80);
+                    this.holst.drawImage(this.imgCircle,this.map[i].x,this.map[i].y,80 * k,80 * k);
                     break;
                 // для клетки хранящей крестик
                 case "X":
-                    this.holst.drawImage(this.imgKrest,this.map[i].x,this.map[i].y,80,80);
+                    this.holst.drawImage(this.imgKrest,this.map[i].x,this.map[i].y,80 * k,80 * k);
                     break;
             }
         }
         // рисуем контур холста
-        this.holst.strokeRect(0,0,240,240);
+        //this.holst.strokeRect(0,0,240,240);
     }
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = CanvasManager;
@@ -390,12 +463,19 @@ class CheckIn{
         this.elementFinder = elementFinder;
         this.stringController = stringController;
         this.message = messageElement;
+		
+		this.parameterList = ["e-mail","логин","пароль"];
+		this.HTMLFieldsList = ["e-mail","login","password"];
+		this.requestHandler.bind(this);
     }
 
     // проверка на корректность логина и пароля
     controlLoginAndPasswordStringsInCheckInForm(){
         // получаем содержимое текстовых полей
         // содержимое строки - логина
+		for(let i = 0; i<3; i++){
+			//this.elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).removeClass('error');
+		}
         const loginString = this.elementFinder.getElement("check-in-box__login-field_black-shadow").value;
         // содержимое строки - пароля
         const passwordString = this.elementFinder.getElement("check-in-box__password-field_black-shadow").value;
@@ -411,7 +491,7 @@ class CheckIn{
 		switch(emailResult){
             // если email - это пустая строка
             case "EMPTY":
-                this.message.addText("Поле ввода email-a пусто.");
+                this.message.addText("Поле email пусто.");
                 stringsOK = false;
                 break;
             // если email некорректен
@@ -422,7 +502,7 @@ class CheckIn{
         }
 		 
         const loginResult = this.stringController.isNormalString(loginString);
-        switch(loginResult){
+       switch(loginResult){
             // если логин - это пустая строка
             case "EMPTY":
                 this.message.addText("Поле ввода логина пусто.");
@@ -450,6 +530,7 @@ class CheckIn{
         }
         // возврат результата проверок на корректность
         return stringsOK;
+		//return true;
     }
 
     // метод для попытки регистрации пользователя
@@ -486,33 +567,92 @@ class CheckIn{
 
 			request.send(strJSON);
 			// при получении ответа с сервера
-			request.onreadystatechange = function(){
-				if(request.readyState === 4){
-					switch ( request.status){
-						case 201:
-							//пользователь успешно создан
-							elementFinder.getElement("check-in-box__email-field_black-shadow").value = "";
-							elementFinder.getElement("check-in-box__login-field_black-shadow").value = "";
-							elementFinder.getElement("check-in-box__password-field_black-shadow").value = "";
-							message.setText("Регистрация прошла успешно.");
+			//bind - привязывает данную функцию (обработчик) к зоне видимости данного класса
+			
+			request.onreadystatechange = (function() {
+                let parameterList = ["e-mail", "логин", "пароль"];
+                let HTMLFieldsList = ["e-mail", "login", "password"];
+                if (request.readyState === 4) {					
+					message.clear();
+                    let answer = JSON.parse(request.responseText);
+                    let keyCode = String(answer.key);
+
+                    if (keyCode !== "777") {
+                        for (let i = 0; i < 3; i++) {
+                            switch (keyCode.charAt(i)) {
+                                case '7':
+                                    break;
+                                case '1':
+                                    message.addText(`Поле ${parameterList[i]} пусто!`);
+                                    //this.elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).addClass('error');
+                                    break;
+                                case '2':
+                                    message.addText(`Данный ${parameterList[i]} уже занят!`);
+                                    //this.elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).addClass('error');
+                                    break;
+                                case '3':
+                                    message.addText(`Поле ${parameterList[i]} содержит запретные символы!`);
+                                    //this.elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).addClass('error');
+                                    break;
+                            }
+                        }
+                    }
+                    else {
+                        //пользователь успешно создан
+                        for (let i = 0; i < 3; i++) {
+                            //this.elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).value = "";
+                            //elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).removeClass('error');
+                        }
+                        message.setText("Регистрация прошла успешно.");
+                    }
+                }
+            });
+        }
+    }
+	
+	/*
+	Формат ответа:
+		"abc", где a - отвечает за логин, b - за емэйл, c - за пароль
+	Коды ответа:	
+		7 - все верно
+		1 - поле пусто
+		2 - ник/емэйл занят
+		3 - некорректно
+	*/	
+	requestHandler(request){
+		if(request.readyState === 4){
+		    let answer = JSON.parse(request.responseText);
+			let keyCode = String(answer.key);
+			if (keyCode !== "777"){
+				for(let i = 0; i<3; i++){
+					switch (keyCode.charAt(i)){
+						case '7':
 							break;
-						case 409:
-							//Этот логин/email занят
-							message.clear();
-							message.addText("Такой логин и/или e-mail уже занят другим пользователем.");
-							message.addText("Придумайте, пожалуйста, другой логин.");
+						case '1':
+							message.addText(`Поле ${this.parameterList[i]} пусто!`);
+							//this.elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).addClass('error');
 							break;
-						case 404:
-							message.clear();
-							message.setText("Вы ввели некорректные данные.");
+						case '2':
+							message.addText(`Данный ${this.parameterList[i]} уже занят!`);
+							//this.elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).addClass('error');
 							break;
-						default:
-							break;
-						}
+						case '3':
+							message.addText(`Поле ${this.parameterList[i]} содержит запретные символы!`);
+							//this.elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).addClass('error');
+							break;									
 					}
 				}
-            }
-        }
+			}
+			else{
+				//пользователь успешно создан
+				for(let i = 0; i<3; i++){
+					this.elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).value = "";
+					//elementFinder.getElement(`check-in-box__${this.HTMLFieldsList[i]}-field_black-shadow`).removeClass('error');
+				}
+				message.setText("Регистрация прошла успешно.");
+			}
+		}
+	}
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = CheckIn;
 
@@ -605,41 +745,41 @@ class GameResultSaver{
     sendResultToServer(loginParam,typeParam){
         // создаём объект JSON для передачи данных
         let myObjJSON = {
-            login: loginParam,
-            tip: typeParam
+            username: loginParam,
+            gameResult: typeParam
         };
+        let body = JSON.stringify(myObjJSON);
         // создаём строку - запрос
-        const query = this.url + "scr3.php?content=" + JSON.stringify(myObjJSON);
+        const query = this.url + "user/update";
         // отправка запроса на сервер
         let request = new XMLHttpRequest();
-        request.open("POST",query);
-        request.setRequestHeader("Content-Type","text/plain;charset=UTF-8");
-        request.send(null);
+        request.open("POST",query, true);
+        request.setRequestHeader("Content-Type","application/json;charset=UTF-8");
+        request.send(body);
+        console.log(query);
+        console.log(body);
         // при получении ответа
         request.onreadystatechange = function(){
             // если ответ нормальный
             if(request.readyState === 4 && request.status === 200){
-                if(request.responseText === "OK") {
-                    // выводим сообщение об успешном сохранении в БД
-                    console.log("Result was saved to DB.");
-                }
+                console.log("Got answer");
             }
         }
     }
 
     // метод для добавление в БД победы
     saveWin(loginParam){
-        this.sendResultToServer(loginParam,1);
+        this.sendResultToServer(loginParam,"WIN");
     }
 
     // метод для добавления в БД поражения
     saveLose(loginParam){
-        this.sendResultToServer(loginParam,2);
+        this.sendResultToServer(loginParam,"LOSE");
     }
 
     // метод для добавления в БД ничьи
     saveNichia(loginParam){
-        this.sendResultToServer(loginParam,3);
+        this.sendResultToServer(loginParam,"DRAW");
     }
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = GameResultSaver;
@@ -679,8 +819,9 @@ class GameWithComputerManager{
                 const xMouse = event.offsetX;
                 const yMouse = event.offsetY;
                 // получаем координаты клетки, по которой был осуществлён щелчок
-                const xKv = Math.floor(xMouse / 80.0);
-                const yKv = Math.floor(yMouse / 80.0);
+                const xKv = Math.floor(xMouse / 160.0);
+                const yKv = Math.floor(yMouse / 160.0);
+                console.log(xKv + "  " + yKv);
                 // переменная - флаг, отвечает за то, выиграл ли кто-нибудь
                 let smbWins = false;
                 // получаем номер нажатой клетки по её координатам
@@ -1025,6 +1166,37 @@ class Router{
 "use strict";
 
 
+class ScreenManager {
+    constructor(){
+        let interval = 0;
+        let thisManager = this;
+        interval = setInterval(function(){
+            const ww = window.innerWidth;
+            const hh = window.innerHeight;
+            console.log(ww + " " + hh);
+            thisManager.changeStylesOfElements(ww,hh);
+        }, 400);
+    }
+
+    getAllElementsOfClass(className){
+        let elementsArray = document.getElementsByClassName(className);
+        return elementsArray;
+    }
+
+    changeStylesOfElements(ww,hh){
+       this.getAllElementsOfClass("main-box_center-position")[0].style.height = (hh - 100) + "px";
+    }
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = ScreenManager;
+
+
+/***/ }),
+/* 11 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+
+
 // класс, который проверяет, может ли данная строка быть логином или паролем
 class StringController{
     isNormalString(s){
@@ -1062,7 +1234,7 @@ class StringController{
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1097,7 +1269,7 @@ class TextFieldsCleaner{
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1122,18 +1294,40 @@ class TopOfPlayersResultsGetter{
         // отпраляем запрос на сервер
         let request = new XMLHttpRequest();
         let url = query;
-        request.open("POST",url, true);
+        request.open("GET",url, true);
         request.setRequestHeader("Content-Type","application/json;charset=UTF-8");
         request.send(null);
+        let styleString = "<style>td{padding-top: 10px; padding-bottom: 10px; padding-left: 15px; padding-right: 15px;}</style> ";
+        let answerTable = styleString + "<table border = '1px'>";
+        answerTable += ("<tr> <td><b>Логин</b></td>  <td><b>Разность побед и поражений</b></td> </tr>");
         // при получении ответа с сервера
         request.onreadystatechange = function(){
             // если ответ нормальный
             if(request.readyState === 4 && request.status === 200){
                 // сохраняем полученные данные в строку
                 const answerContent = request.responseText;
+
+                let obj = JSON.parse(answerContent);
+                let arr = obj.userProfiles;
+                let n = arr.length;
+                for(let i = 0; i < n; i++){
+                    let username = arr[i].username;
+                    let email = arr[i].email;
+                    let wins = arr[i].wins;
+                    let losses = arr[i].losses;
+                    let draws = arr[i].draws;
+                    answerTable += ("<tr>");
+                    answerTable += ("<td>" + username + "</td>");
+                    //answerTable += ("<td>" + email + "</td>");
+                    //answerTable += ("<td>" + wins + "</td>");
+                    //answerTable += ("<td>" + losses + "</td>");
+                    //answerTable += ("<td>" + draws + "</td>");
+                    answerTable += ("<td>" + (parseInt(wins) - parseInt(losses)) + "</td>");
+                    answerTable += ("</tr>");
+                }
+                answerTable += "</table>";
                 // вызываем метод вывода данных на экран
-                thisManager.printInformationAboutBestUsers(answerContent);
-                console.log(answerContent);
+                thisManager.printInformationAboutBestUsers(answerTable);
             }
         }
     }
@@ -1156,7 +1350,7 @@ class TopOfPlayersResultsGetter{
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1164,93 +1358,229 @@ class TopOfPlayersResultsGetter{
 
 // класс для реализация многопользовательской игры
 class TwoPlayersGameManager{
-    constructor(url,isAuthorized, message, twoPlayersCanvasManager){
+    constructor(url,isAuthorized, message, twoPlayersCanvasManager, elementFinder, gameResultSaver){
         let thisManager = this;
+        this.elementFinder = elementFinder;
         this.url = url;
         this.isAuthorized = isAuthorized;
         this.message = message;
         this.twoPlayersCanvasManager = twoPlayersCanvasManager;
-        this.message.setText("Ожидание соперника ... ... ");
-        twoPlayersCanvasManager.renderMap();
+
+        this.gameResultSaver = gameResultSaver;
+        this.resultOfGame = "";
+
+        this.message.setText("Ожидание соперника ... ");
+
+        this.twoPlayersCanvasManager.clearField();
+        this.twoPlayersCanvasManager.renderMap();
 
         this.socket = new WebSocket(this.url);
         let socket = this.socket;
 
         this.loginFirst = "";
         this.loginSecond = "";
-        this.socketFirst = "";
-        this.socketSecond = "";
         this.field = "";
-
-        this.whoIAm = null;
-
+        this.whoIAm = -1;
         let gotFirstMessage = false;
+
+        let holst = this.elementFinder.getElement("two-players-game-box__holst-for-paint_cursor-pointer");
+        holst.addEventListener("click", function(){
+            if(gotFirstMessage === true && thisManager.whoIAm === thisManager.whoseTurnNow()){
+                const xMouse = event.offsetX;
+                const yMouse = event.offsetY;
+                // получаем координаты клетки, по которой был осуществлён щелчок
+                const xKv = Math.floor(xMouse / 160.0);
+                const yKv = Math.floor(yMouse / 160.0);
+                console.log(xKv + "  " + yKv);
+                let number = thisManager.getNumberOfKvByCoordinats(xKv, yKv);
+                if (thisManager.twoPlayersCanvasManager.getElementOfMap(number).type === "@") {
+                    if(thisManager.whoIAm === 1){
+                        thisManager.twoPlayersCanvasManager.setElementOfMap(number,"X");
+                    } else {
+                        thisManager.twoPlayersCanvasManager.setElementOfMap(number,"0");
+                    }
+                    thisManager.twoPlayersCanvasManager.renderMap();
+                    let myObjContent = {
+                        loginFirst: thisManager.loginFirst,
+                        loginSecond: thisManager.loginSecond,
+                        field: thisManager.twoPlayersCanvasManager.getStringContentOfMap()
+                    };
+                    let myObj = {
+                        type: 2,
+                        content: myObjContent
+                    };
+                    let query = JSON.stringify(myObj);
+                    socket.send(query);
+                    console.log("Query:  " + query);
+                    console.log("Send it");
+                }
+            }
+        });
+
+        this.interval = "";
+        this.interval = setInterval(function(){
+            let myObj = {
+                type: 999
+            };
+            let query = JSON.stringify(myObj);
+            socket.send(query);
+            console.log("We sent 999 to Magamed");
+        }, 3000);
 
         socket.onopen = function() {
             console.log("Соединение установлено");
             let myLogin = thisManager.isAuthorized.login;
             let myObj = {
-                content: ""
+                type: 1,
+                content: myLogin
             };
-            myObj.content = myLogin.toString();
             let query = JSON.stringify(myObj);
             socket.send(query);
         };
 
         socket.onclose = function(event) {
             console.log('Соединение закрыто');
+            clearInterval(thisManager.interval);
+            console.log("Result: " + thisManager.resultOfGame);
+            if(thisManager.resultOfGame === "WIN"){
+                thisManager.gameResultSaver.saveWin(thisManager.isAuthorized.login);
+            }
+            if(thisManager.resultOfGame === "LOSE"){
+                thisManager.gameResultSaver.saveLose(thisManager.isAuthorized.login);
+            }
+            if(thisManager.resultOfGame === "NICH"){
+                thisManager.gameResultSaver.saveNichia(thisManager.isAuthorized.login);
+            }
+            //thisManager.socket.close();
         };
 
         socket.onmessage = function(event) {
             if(gotFirstMessage === false) {
                 console.log("Получены самое первое сообщение " + event.data);
                 gotFirstMessage = true;
-                thisManager.getMessage();
+                let answer = decodeURIComponent(event.data);
+                let myJSON = JSON.parse(answer);
+                thisManager.loginFirst = myJSON.loginFirst;
+                thisManager.loginSecond = myJSON.loginSecond;
+                thisManager.field = myJSON.field;
+
+                if(thisManager.isAuthorized.login === thisManager.loginFirst){
+                    thisManager.whoIAm = 1;
+                }else{
+                    thisManager.whoIAm = 2;
+                }
+                let messageString = "Игрок " + thisManager.loginFirst + " против игрока " + thisManager.loginSecond + "<br>";
+                console.log(thisManager.loginFirst);
+                console.log(thisManager.loginSecond);
+                console.log(thisManager.field);
+                if(thisManager.whoIAm === 1)
+                {
+                    messageString += "Вы играете за Крестики";
+                }else{
+                    messageString += "Вы играете за Нолики";
+                }
+                thisManager.message.setText(messageString);
             } else {
                 console.log("Получены сообщение " + event.data);
+                let myObj = JSON.parse(event.data);
+                let field = myObj.field;
+
+                if(field !== "KREST" && field !== "ZERO" && field !== "NICH") {
+                    thisManager.twoPlayersCanvasManager.setStringContentOfMap(field);
+                    thisManager.twoPlayersCanvasManager.renderMap();
+
+                    const krestWin = thisManager.isKrestWin();
+                    const zeroWin = thisManager.isZeroWin();
+
+                    if (krestWin === true) {
+                        thisManager.message.setText("Игра окончена. Победили Крестики.");
+                        thisManager.sendGameEnd("KREST");
+                        if(thisManager.whoIAm === 1){
+                            thisManager.resultOfGame = "WIN";
+                        }
+                        if(thisManager.whoIAm === 2){
+                            thisManager.resultOfGame = "LOSE";
+                        }
+                        thisManager.socket.close();
+                        return;
+                    }
+                    else if (zeroWin === true) {
+                        thisManager.message.setText("Игра окончена. Победили Нолики.");
+                        thisManager.sendGameEnd("ZERO");
+                        if(thisManager.whoIAm === 1){
+                            thisManager.resultOfGame = "LOSE";
+                        }
+                        if(thisManager.whoIAm === 2){
+                            thisManager.resultOfGame = "WIN";
+                        }
+                        thisManager.socket.close();
+                        return;
+                    } else if (thisManager.areAllBusy() === true) {
+                        thisManager.message.setText("Игра окончена. Ничья.");
+                        thisManager.sendGameEnd("NICH");
+                        thisManager.resultOfGame = "NICH";
+                        thisManager.socket.close();
+                        return;
+                    }
+                }else{
+                    if(field === "KREST"){
+                        thisManager.message.setText("Игра окончена. Победили Крестики.");
+                        clearInterval(thisManager.interval);
+                        if(thisManager.whoIAm === 1){
+                            thisManager.resultOfGame = "WIN";
+                        }
+                        if(thisManager.whoIAm === 2){
+                            thisManager.resultOfGame = "LOSE";
+                        }
+                        thisManager.socket.close();
+                    }
+
+                    if(field === "ZERO"){
+                        thisManager.message.setText("Игра окончена. Победили Нолики.");
+                        clearInterval(thisManager.interval);
+                        if(thisManager.whoIAm === 1){
+                            thisManager.resultOfGame = "LOSE";
+                        }
+                        if(thisManager.whoIAm === 2){
+                            thisManager.resultOfGame = "WIN";
+                        }
+                        thisManager.socket.close();
+                    }
+
+                    if(field === "NICH"){
+                        thisManager.message.setText("Игра окончена. Ничья.");
+                        clearInterval(thisManager.interval);
+                        thisManager.resultOfGame = "NICH";
+                        thisManager.socket.close();
+                    }
+                }
             }
         };
 
         socket.onerror = function(error) {
             console.log("Ошибка");
+            clearInterval(thisManager.interval);
+            thisManager.socket.close();
         };
-
     }
 
-    getMessage(){
+    sendGameEnd(param){
         let thisManager = this;
-        let s = decodeURIComponent(event.data);
-        let myJSON = JSON.parse(s);
-        let stringWithMes = myJSON.message;
-        myJSON = JSON.parse(stringWithMes);
-        thisManager.loginFirst = myJSON.loginFirst;
-        thisManager.loginSecond = myJSON.loginSecond;
-        thisManager.socketFirst = myJSON.first;
-        thisManager.socketSecond = myJSON.second;
-
-        console.log(thisManager.loginFirst);
-        console.log(thisManager.loginSecond);
-
-        if(thisManager.isAuthorized.login === thisManager.loginFirst)
-        {
-            thisManager.whoIAm = true;
-            thisManager.message.setText("Вы играете за крестики против игрока " + thisManager.loginSecond);
-            if(thisManager.whoseTurnNow() === true){
-                thisManager.addText("Ваш ход");
-            }else{
-                thisManager.addText("Ходит противник");
-            }
-
-        }else{
-            thisManager.whoIAm = false;
-            thisManager.message.setText("Вы играете за нолики против игрока " + thisManager.loginFirst);
-            if(thisManager.whoseTurnNow() === false){
-                thisManager.addText("Ваш ход");
-            }else{
-                thisManager.message.addText("Ходит противник");
-            }
-        }
+        let myObjContent = {
+            loginFirst: thisManager.loginFirst,
+            loginSecond: thisManager.loginSecond,
+            field: param
+        };
+        let myObj = {
+            type: 2,
+            content: myObjContent
+        };
+        let query = JSON.stringify(myObj);
+        thisManager.socket.send(query);
+        console.log("Query:  " + query);
+        console.log("Send it");
     }
+
 
 
     whoseTurnNow(){
@@ -1262,9 +1592,9 @@ class TwoPlayersGameManager{
             }
         }
         if(number % 2 === 0){
-            return false;
+            return 2;
         }
-        return true;
+        return 1;
     }
 
 
@@ -1368,7 +1698,7 @@ class TwoPlayersGameManager{
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1387,25 +1717,35 @@ class UserResultsGetter{
     sendQueryToServerForGettingUserInfo(loginParam){
         // переменная для доступа к THIS внутри блока onreadystatechange
         let thisManager = this;
-        // объект JSON для передачи данных
-        let myObjJSON = {
-            login: loginParam
-        };
-        // создаём строку - запрос
-        const query = this.url + "scr4.php?content=" + JSON.stringify(myObjJSON);
-        // посылаем запрос на сервер
+        const query = this.url + "stats/" + 99999;
+        // отпраляем запрос на сервер
         let request = new XMLHttpRequest();
-        request.open("POST",query);
-        request.setRequestHeader("Content-Type","text/plain;charset=UTF-8");
+        let url = query;
+        request.open("GET",url, true);
+        request.setRequestHeader("Content-Type","application/json;charset=UTF-8");
         request.send(null);
         // при получении ответа с сервера
+        let answerStr = "";
         request.onreadystatechange = function(){
             // если ответ нормальный
             if(request.readyState === 4 && request.status === 200){
                 // сохраняем полученную информацию о пользователе в строку
-                const userInfo = request.responseText;
-                // вызываем метод вывода информации на экран
-                thisManager.printUserInfo(userInfo);
+                const answerContent = request.responseText;
+                let obj = JSON.parse(answerContent);
+                let arr = obj.userProfiles;
+                let n = arr.length;
+                for(let i = 0; i < n; i++) {
+                    let username = arr[i].username;
+                    let email = arr[i].email;
+                    let wins = arr[i].wins;
+                    let losses = arr[i].losses;
+                    let draws = arr[i].draws;
+                    if(username === loginParam){
+                        answerStr = username + "@" + wins + "@" + losses + "@" + draws + "@" + email;
+                        break;
+                    }
+                }
+                thisManager.printUserInfo(answerStr);
             }
         }
     }
@@ -1419,6 +1759,7 @@ class UserResultsGetter{
         // выводим информацию о пользователе
         this.contentManager.clear();
         this.contentManager.addText("Игрок: " + arrInfo[0]);
+        //this.contentManager.addText("Почта: " + arrInfo[4]);
         this.contentManager.addText("Победы: " + arrInfo[1]);
         this.contentManager.addText("Поражения: " + arrInfo[2]);
         this.contentManager.addText("Ничьи: " + arrInfo[3]);
@@ -1434,7 +1775,7 @@ class UserResultsGetter{
 
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -1442,21 +1783,24 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__BoxRender_js__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__ElementFinder_js__ = __webpack_require__(5);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__ContentManager_js__ = __webpack_require__(4);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__StringController_js__ = __webpack_require__(10);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__StringController_js__ = __webpack_require__(11);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__AuthorizationControl_js__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__CheckIn_js__ = __webpack_require__(3);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__TextFieldsCleaner_js__ = __webpack_require__(11);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__TextFieldsCleaner_js__ = __webpack_require__(12);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__Router_js__ = __webpack_require__(9);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_8__CanvasManager_js__ = __webpack_require__(2);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_9__GameWithComputerManager_js__ = __webpack_require__(7);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_10__GameResultSaver_js__ = __webpack_require__(6);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_11__UserResultsGetter_js__ = __webpack_require__(14);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_11__UserResultsGetter_js__ = __webpack_require__(15);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_12__HelloToServer_js__ = __webpack_require__(8);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_13__TopOfPlayersResultsGetter_js__ = __webpack_require__(12);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_14__TwoPlayersGameManager_js__ = __webpack_require__(13);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_13__TopOfPlayersResultsGetter_js__ = __webpack_require__(13);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_14__TwoPlayersGameManager_js__ = __webpack_require__(14);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_15__ScreenManager_js__ = __webpack_require__(10);
 
 
 // подключем вспомогательные модули
+
+
 
 
 
@@ -1486,7 +1830,7 @@ class Mediator{
 		
         // строка для хранения адреса сервера для организации многопользовательской игры
         // this.socketUrl = "http://localhost:4000/";
-        this.socketUrl = "ws://dnoteam.herokuapp.com/register";
+        this.socketUrl = "ws://dnoteam.herokuapp.com/game";
 
         // объект, отвечающий за то, авторизован ли пользователь
         this.isAuthorized = {
@@ -1523,6 +1867,7 @@ class Mediator{
     sendHelloToServer(){
         this.helloToServer = new __WEBPACK_IMPORTED_MODULE_12__HelloToServer_js__["a" /* default */](this.url);
         this.helloToServer.sendHello();
+        this.authorizationControl.sendHelloToServer(this.url,this.router,this.isAuthorized);
     }
 
     // метод для добавление тектовых полей в объект, отвечающий за их очистку
@@ -1665,7 +2010,7 @@ class Mediator{
         let gameWithAnotherPlayerBtn = this.elementFinder.getElement("my-profile-box__play-with-user-button_DeepSkyBlue-color");
         gameWithAnotherPlayerBtn.addEventListener("click",function(){
             mediatorThis.changePathName("/two_players_game");
-            mediatorThis.twoPlayersGameManager = new __WEBPACK_IMPORTED_MODULE_14__TwoPlayersGameManager_js__["a" /* default */](mediatorThis.socketUrl,mediatorThis.isAuthorized, mediatorThis.twoPlayersMessage, mediatorThis.twoPlayersCanvasManager);
+            mediatorThis.twoPlayersGameManager = new __WEBPACK_IMPORTED_MODULE_14__TwoPlayersGameManager_js__["a" /* default */](mediatorThis.socketUrl,mediatorThis.isAuthorized, mediatorThis.twoPlayersMessage, mediatorThis.twoPlayersCanvasManager, mediatorThis.elementFinder, mediatorThis.gameResultSaver);
         });
     }
 }
@@ -1682,8 +2027,9 @@ window.addEventListener("load", function(){
     mediator.definePage();
     mediator.renderCanvasHolst();
     mediator.sendHelloToServer();
-});
 
+    let screenManager = new __WEBPACK_IMPORTED_MODULE_15__ScreenManager_js__["a" /* default */]();
+});
 
 
 /***/ })
