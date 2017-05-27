@@ -1971,6 +1971,7 @@ class Mediator{
             // создаём объект для отправки запроса
             let request = new XMLHttpRequest();
             request.open("GET",query);
+			request.withCredentials = true;
             request.setRequestHeader("Content-Type","application/json;charset=UTF-8");
             request.send(null);
 
