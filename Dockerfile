@@ -3,7 +3,7 @@ FROM nginx:1.13.0-alpine
 RUN apk add --update bash
 
 COPY ./nginx.conf /etc/nginx
-COPY ./listen.conf /etc/nginx/
+COPY ./public /usr/share/nginx/html
 
 RUN mkdir /xogame123
 COPY ./static/ResultScript/result.js /xogame123/result.js
