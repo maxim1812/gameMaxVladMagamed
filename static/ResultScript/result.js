@@ -213,11 +213,7 @@ class AuthorizationControl{
 							
 							// авторизация прошла успешно
                             // work with cookie
-                            //document.cookie = "USER=" + JSONAnswer.userProfile.username;
-                            //document.cookie = "MAIL=" + thisElem.elementFinder.getElement("authorization-box__login-field_black-shadow").value;
-                            //document.cookie = "PASSWORD=" +  thisElem.elementFinder.getElement("authorization-box__password-field_black-shadow").value;
-                        alert( document.cookie );
-
+                            
                         // меняем содержимое полей объекта, отвечающего за авторизованность пользователя
 								isAuthorized.flag = true;
 								let userName = JSONAnswer.userProfile.username;
