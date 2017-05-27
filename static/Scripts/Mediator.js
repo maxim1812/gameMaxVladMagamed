@@ -16,6 +16,8 @@ import UserResultsGetter from "./UserResultsGetter.js";
 import HelloToServer from "./HelloToServer.js";
 import TopOfPlayersResultsGetter from "./TopOfPlayersResultsGetter.js";
 import TwoPlayersGameManager from "./TwoPlayersGameManager.js";
+import ScreenManager from "./ScreenManager.js";
+
 
 // класс для управления взаимодействием между модулями
 class Mediator{
@@ -30,7 +32,7 @@ class Mediator{
 		
         // строка для хранения адреса сервера для организации многопользовательской игры
         // this.socketUrl = "http://localhost:4000/";
-        this.socketUrl = "ws://dnoteam.herokuapp.com/register";
+        this.socketUrl = "ws://dnoteam.herokuapp.com/game";
 
         // объект, отвечающий за то, авторизован ли пользователь
         this.isAuthorized = {
@@ -67,6 +69,7 @@ class Mediator{
     sendHelloToServer(){
         this.helloToServer = new HelloToServer(this.url);
         this.helloToServer.sendHello();
+        this.authorizationControl.sendHelloToServer(this.url,this.router,this.isAuthorized);
     }
 
     // метод для добавление тектовых полей в объект, отвечающий за их очистку
@@ -209,7 +212,7 @@ class Mediator{
         let gameWithAnotherPlayerBtn = this.elementFinder.getElement("my-profile-box__play-with-user-button_DeepSkyBlue-color");
         gameWithAnotherPlayerBtn.addEventListener("click",function(){
             mediatorThis.changePathName("/two_players_game");
-            mediatorThis.twoPlayersGameManager = new TwoPlayersGameManager(mediatorThis.socketUrl,mediatorThis.isAuthorized, mediatorThis.twoPlayersMessage, mediatorThis.twoPlayersCanvasManager);
+            mediatorThis.twoPlayersGameManager = new TwoPlayersGameManager(mediatorThis.socketUrl,mediatorThis.isAuthorized, mediatorThis.twoPlayersMessage, mediatorThis.twoPlayersCanvasManager, mediatorThis.elementFinder, mediatorThis.gameResultSaver);
         });
     }
 }
@@ -226,5 +229,6 @@ window.addEventListener("load", function(){
     mediator.definePage();
     mediator.renderCanvasHolst();
     mediator.sendHelloToServer();
-});
 
+    let screenManager = new ScreenManager();
+});
